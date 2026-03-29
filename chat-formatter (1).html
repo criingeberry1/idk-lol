@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a1625">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>чат-форматтер</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  ::selection { background: #c8acd6; color: #1a1625; }
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #4a3f5c; border-radius: 3px; }
+
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: linear-gradient(165deg, #1a1625 0%, #231d30 50%, #1e1a2a 100%);
+    color: #e0d8ec;
+    display: flex; flex-direction: column;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .install-banner {
+    display: none; padding: 10px 16px;
+    background: rgba(200,172,214,0.08);
+    border-bottom: 1px solid rgba(200,172,214,0.1);
+    align-items: center; justify-content: space-between; gap: 10px;
+    font-size: 12px; color: #a893b8; flex-shrink: 0;
+  }
+  .install-banner.show { display: flex; }
+  .install-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; padding: 6px 14px;
+    border-radius: 6px; border: 1px solid rgba(200,172,214,0.25);
+    background: rgba(200,172,214,0.12); color: #c8acd6;
+    cursor: pointer; white-space: nowrap;
+  }
+  .install-dismiss {
+    background: none; border: none; color: #6b6080;
+    font-size: 18px; cursor: pointer; padding: 0 4px; line-height: 1;
+  }
+
+  .tabs {
+    display: none; flex-shrink: 0;
+    border-bottom: 1px solid rgba(200,172,214,0.08);
+  }
+  .tabs-row { display: flex; }
+  .tab {
+    flex: 1; padding: 12px 0; text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; font-weight: 600;
+    color: #6b6080; text-transform: uppercase;
+    letter-spacing: 0.5px; cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+    background: none; border-top: none; border-left: none; border-right: none;
+  }
+  .tab.active { color: #c8acd6; border-bottom-color: #c8acd6; }
+
+  .content {
+    flex: 1; overflow-y: auto; padding: 20px 16px 24px;
+    display: flex; flex-direction: column; gap: 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .header { flex-shrink: 0; }
+  .title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .icon { font-size: 18px; color: #c8acd6; }
+  h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px; font-weight: 600;
+    color: #f0e6fa; letter-spacing: -0.5px;
+  }
+  .subtitle { font-size: 12px; color: #8a7e9b; margin-left: 28px; }
+
+  .dict-section {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(200,172,214,0.1);
+    border-radius: 12px; padding: 14px; flex-shrink: 0;
+  }
+  .dict-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .dict-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 600; color: #c8acd6;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .dict-hint { font-size: 11px; color: #6b6080; }
+  .dict-input-row { display: flex; align-items: center; gap: 6px; }
+  .dict-input {
+    flex: 1; min-width: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; padding: 9px 10px;
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(200,172,214,0.12);
+    border-radius: 8px; color: #e0d8ec; outline: none;
+  }
+  .dict-input::placeholder { color: #4a3f5c; }
+  .dict-input:focus { border-color: rgba(200,172,214,0.3); }
+  .arrow { color: #6b6080; font-size: 13px; flex-shrink: 0; }
+  .add-btn {
+    width: 36px; height: 36px; border-radius: 8px;
+    border: 1px solid rgba(200,172,214,0.2);
+    background: rgba(200,172,214,0.08);
+    color: #c8acd6; font-size: 20px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-family: 'JetBrains Mono', monospace;
+    line-height: 1;
+  }
+  .add-btn:active { background: rgba(200,172,214,0.25); }
+
+  .dict-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .dict-entry {
+    display: flex; align-items: center; gap: 5px;
+    background: rgba(200,172,214,0.07);
+    border: 1px solid rgba(200,172,214,0.12);
+    border-radius: 20px; padding: 5px 8px 5px 11px;
+    font-size: 12px; font-family: 'JetBrains Mono', monospace;
+    animation: pop 0.2s ease;
+  }
+  @keyframes pop { from { opacity:0; transform:scale(0.85); } to { opacity:1; transform:scale(1); } }
+  .dict-from { color: #a893b8; }
+  .dict-arrow-sm { color: #5a5069; font-size: 10px; }
+  .dict-to { color: #e0d8ec; font-weight: 600; }
+  .remove-btn {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: none; background: rgba(200,172,214,0.1);
+    color: #8a7e9b; font-size: 14px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    margin-left: 2px; line-height: 1;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .remove-btn:active { background: rgba(220,100,100,0.25); color: #e07070; }
+
+  .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; flex: 1; min-height: 0; }
+  .panel { display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+  .panel-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 600; color: #6b6080;
+    text-transform: uppercase; letter-spacing: 1px; flex-shrink: 0;
+  }
+  .panel-label-row { display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+
+  textarea {
+    flex: 1; min-height: 180px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; line-height: 1.6;
+    padding: 12px 14px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(200,172,214,0.1);
+    border-radius: 12px; color: #e0d8ec;
+    resize: none; white-space: pre-wrap; outline: none;
+  }
+  textarea::placeholder { color: #4a3f5c; }
+  textarea:focus { border-color: rgba(200,172,214,0.25); }
+
+  .output-box {
+    flex: 1; min-height: 180px;
+    padding: 12px 14px;
+    background: rgba(0,0,0,0.18);
+    border: 1px solid rgba(200,172,214,0.08);
+    border-radius: 12px; overflow-y: auto;
+  }
+  .output-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; line-height: 1.6;
+    color: #f0e6fa; white-space: pre-wrap;
+    word-break: break-word; margin: 0;
+  }
+  .output-placeholder { font-size: 13px; color: #4a3f5c; font-style: italic; }
+
+  .copy-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; padding: 5px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(200,172,214,0.15);
+    background: rgba(200,172,214,0.06);
+    color: #c8acd6; cursor: pointer; letter-spacing: 0.3px;
+  }
+  .copy-btn:active { background: rgba(200,172,214,0.2); }
+  .copy-btn.copied { color: #80d6a0; border-color: rgba(128,214,160,0.2); }
+
+  @media (max-width: 700px) {
+    .content { padding: 14px 12px 20px; gap: 12px; }
+    .tabs { display: block; }
+    .main-grid { grid-template-columns: 1fr; flex: 1; }
+    .panel.hidden-mobile { display: none; }
+    h1 { font-size: 18px; }
+    .subtitle { font-size: 11px; margin-left: 28px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="install-banner" id="installBanner">
+  <span>установи как приложение</span>
+  <div style="display:flex;gap:6px;align-items:center">
+    <button class="install-btn" id="installBtn">установить</button>
+    <button class="install-dismiss" id="installDismiss">&times;</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tabs-row">
+    <button class="tab active" data-tab="input">вход</button>
+    <button class="tab" data-tab="output">выход</button>
+  </div>
+</div>
+
+<div class="content">
+  <div class="header">
+    <div class="title-row">
+      <span class="icon">✦</span>
+      <h1>чат-форматтер</h1>
+    </div>
+    <p class="subtitle">вставь скопированные сообщения &rarr; получи читаемый текст</p>
+  </div>
+
+  <div class="dict-section">
+    <div class="dict-header">
+      <span class="dict-label">словарь замен</span>
+      <span class="dict-hint" id="dictCount">0 замен</span>
+    </div>
+    <div class="dict-input-row">
+      <input class="dict-input" id="fromInput" placeholder="было" autocomplete="off">
+      <span class="arrow">&rarr;</span>
+      <input class="dict-input" id="toInput" placeholder="стало" autocomplete="off">
+      <button class="add-btn" id="addBtn">+</button>
+    </div>
+    <div class="dict-list" id="dictList"></div>
+  </div>
+
+  <div class="main-grid">
+    <div class="panel" id="panelInput">
+      <label class="panel-label">вход</label>
+      <textarea id="inputArea" placeholder="вставь сюда скопированные сообщения..." spellcheck="false"></textarea>
+    </div>
+    <div class="panel" id="panelOutput">
+      <div class="panel-label-row">
+        <label class="panel-label">выход</label>
+        <button class="copy-btn" id="copyBtn" style="display:none">скопировать</button>
+      </div>
+      <div class="output-box">
+        <pre class="output-text" id="outputText" style="display:none"></pre>
+        <span class="output-placeholder" id="outputPlaceholder">здесь появится результат</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SK = 'chat-formatter-dict';
+let dict = JSON.parse(localStorage.getItem(SK) || '[]');
+const save = () => localStorage.setItem(SK, JSON.stringify(dict));
+
+const $ = id => document.getElementById(id);
+const fromInput = $('fromInput'), toInput = $('toInput');
+const addBtn = $('addBtn'), dictListEl = $('dictList'), dictCount = $('dictCount');
+const inputArea = $('inputArea'), outputText = $('outputText');
+const outputPlaceholder = $('outputPlaceholder'), copyBtn = $('copyBtn');
+
+function plural(n) {
+  if (n % 10 === 1 && n % 100 !== 11) return n + ' замена';
+  if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return n + ' замены';
+  return n + ' замен';
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function renderDict() {
+  dictCount.textContent = plural(dict.length);
+  dictListEl.innerHTML = '';
+  dict.forEach((e, i) => {
+    const el = document.createElement('div');
+    el.className = 'dict-entry';
+    el.innerHTML = '<span class="dict-from">' + esc(e.from) + '</span><span class="dict-arrow-sm">&rarr;</span><span class="dict-to">' + esc(e.to) + '</span>';
+    const btn = document.createElement('button');
+    btn.className = 'remove-btn'; btn.textContent = '\u00d7';
+    btn.onclick = () => { dict.splice(i, 1); save(); renderDict(); formatChat(); };
+    el.appendChild(btn);
+    dictListEl.appendChild(el);
+  });
+}
+
+function addEntry() {
+  const from = fromInput.value.trim(), to = toInput.value.trim();
+  if (!from) return;
+  dict = dict.filter(d => d.from.toLowerCase() !== from.toLowerCase());
+  dict.push({ from, to: to || from });
+  save(); renderDict(); formatChat();
+  fromInput.value = ''; toInput.value = ''; fromInput.focus();
+}
+
+addBtn.onclick = addEntry;
+[fromInput, toInput].forEach(el => el.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); addEntry(); }
+}));
+
+function formatChat() {
+  const raw = inputArea.value;
+  if (!raw.trim()) {
+    outputText.style.display = 'none';
+    outputPlaceholder.style.display = '';
+    copyBtn.style.display = 'none';
+    return;
+  }
+
+  const lines = raw.split('\n');
+  const blocks = [];
+  let cur = null;
+
+  for (const line of lines) {
+    const t = line.trim();
+    const m = t.match(/^(.+):$/);
+    if (m) {
+      const orig = m[1].trim();
+      let name = orig;
+      for (const { from, to } of dict) {
+        if (from && orig.toLowerCase() === from.toLowerCase()) { name = to; break; }
+      }
+      if (cur) blocks.push(cur);
+      cur = { name, lines: [] };
+      continue;
+    }
+    if (t === '') continue;
+    if (cur) cur.lines.push(t);
+    else cur = { name: null, lines: [t] };
+  }
+  if (cur) blocks.push(cur);
+
+  const merged = [];
+  for (const b of blocks) {
+    const prev = merged[merged.length - 1];
+    if (prev && prev.name === b.name) prev.lines.push(...b.lines);
+    else merged.push({ name: b.name, lines: [...b.lines] });
+  }
+
+  const result = merged.map(b => {
+    const h = b.name !== null ? b.name + ':' : '';
+    const body = b.lines.join('\n');
+    return h ? h + '\n' + body : body;
+  }).join('\n\n');
+
+  outputText.textContent = result;
+  outputText.style.display = '';
+  outputPlaceholder.style.display = 'none';
+  copyBtn.style.display = '';
+}
+
+inputArea.addEventListener('input', formatChat);
+
+copyBtn.onclick = async () => {
+  try {
+    await navigator.clipboard.writeText(outputText.textContent);
+    copyBtn.textContent = '\u2713 скопировано';
+    copyBtn.classList.add('copied');
+    setTimeout(() => { copyBtn.textContent = 'скопировать'; copyBtn.classList.remove('copied'); }, 1500);
+  } catch {}
+};
+
+// Mobile tabs
+const tabs = document.querySelectorAll('.tab');
+let activeTab = 'input';
+
+function applyTab() {
+  tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === activeTab));
+  const mob = window.matchMedia('(max-width:700px)').matches;
+  if (mob) {
+    $('panelInput').classList.toggle('hidden-mobile', activeTab !== 'input');
+    $('panelOutput').classList.toggle('hidden-mobile', activeTab !== 'output');
+  } else {
+    $('panelInput').classList.remove('hidden-mobile');
+    $('panelOutput').classList.remove('hidden-mobile');
+  }
+}
+tabs.forEach(t => t.addEventListener('click', () => { activeTab = t.dataset.tab; applyTab(); }));
+window.addEventListener('resize', applyTab);
+
+inputArea.addEventListener('input', () => {
+  if (window.matchMedia('(max-width:700px)').matches && inputArea.value.trim().length > 20) {
+    setTimeout(() => { activeTab = 'output'; applyTab(); }, 400);
+  }
+});
+
+// PWA Install prompt
+let deferredPrompt = null;
+const banner = $('installBanner');
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredPrompt = e; banner.classList.add('show');
+});
+$('installBtn').onclick = async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null; banner.classList.remove('show');
+};
+$('installDismiss').onclick = () => banner.classList.remove('show');
+window.addEventListener('appinstalled', () => banner.classList.remove('show'));
+
+renderDict(); formatChat(); applyTab();
+</script>
+
+<script>
+// Dynamic PWA manifest & service worker
+const manifest = {
+  name: "\u0447\u0430\u0442-\u0444\u043e\u0440\u043c\u0430\u0442\u0442\u0435\u0440",
+  short_name: "\u0444\u043e\u0440\u043c\u0430\u0442\u0442\u0435\u0440",
+  start_url: ".",
+  display: "standalone",
+  background_color: "#1a1625",
+  theme_color: "#1a1625",
+  icons: [{
+    src: "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#1a1625"/><rect x="40" y="40" width="432" height="432" rx="72" fill="#231d30"/><text x="256" y="310" text-anchor="middle" font-size="220" fill="#c8acd6">\u2726</text></svg>'),
+    sizes: "512x512", type: "image/svg+xml", purpose: "any maskable"
+  }]
+};
+const mBlob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+const mLink = document.createElement('link');
+mLink.rel = 'manifest'; mLink.href = URL.createObjectURL(mBlob);
+document.head.appendChild(mLink);
+
+const fav = document.createElement('link');
+fav.rel = 'icon';
+fav.href = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#1a1625"/><text x="16" y="23" text-anchor="middle" font-size="18" fill="#c8acd6">\u2726</text></svg>');
+document.head.appendChild(fav);
+
+if ('serviceWorker' in navigator) {
+  const sw = 'const C="cf-v1";self.addEventListener("install",e=>{self.skipWaiting()});self.addEventListener("activate",e=>{self.clients.claim()});self.addEventListener("fetch",e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)))});';
+  const sBlob = new Blob([sw], {type:'application/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(sBlob)).catch(()=>{});
+}
+</script>
+</body>
+</html>
